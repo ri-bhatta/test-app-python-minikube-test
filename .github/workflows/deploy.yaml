@@ -61,7 +61,14 @@ jobs:
     - name: View Logs
       run: |
         POD_NAME=$(kubectl get pods -o jsonpath="{.items[0].metadata.name}")
-        kubectl logs $POD_NAME
+        timeout=60  # Adjust the timeout value as needed
+        interval=2
+        start=$(date +%s)
+        while [[ $(date +%s) -lt $((start + timeout)) ]]; do
+          kubectl logs $POD_NAME
+          sleep $interval
+        done
+
         
     - name: Clean up Minikube
       run: minikube stop
