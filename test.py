@@ -11,11 +11,14 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-def run_server():
-    server_address = ('', 80)
-    httpd = HTTPServer(server_address, RequestHandler)
-    print(f'Starting server on port 80...')
+def run(server_class=HTTPServer, handler_class=RequestHandler, port=80):
+    server_address = ('', port)
+    httpd = server_class(server_address, handler_class)
+    print(f'Starting server on port {port}...')
     httpd.serve_forever()
+
+def run_server():
+    run()
 
 if __name__ == '__main__':
     # Create a thread for the server
@@ -27,5 +30,6 @@ if __name__ == '__main__':
     # Main thread can continue with other tasks
     print("Main thread is doing something else...")
 
-    # Wait for the server thread to finish (although it never will in this case)
-    server_thread.join()
+    # No need to join() the server thread here
+
+# The main thread will continue to run while the server_thread is serving
