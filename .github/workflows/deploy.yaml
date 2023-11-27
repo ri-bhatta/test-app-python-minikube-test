@@ -23,7 +23,7 @@ jobs:
         kubectl apply -f kubernetes/test-service.yaml
     - name: Wait for Deployment
       run: |
-        timeout=50
+        timeout=150
         interval=5
         start=$(date +%s)
         while [[ $(date +%s) -lt $((start + timeout)) ]]; do
