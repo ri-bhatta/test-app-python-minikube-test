@@ -1,0 +1,67 @@
+name: Deploy to Kubernetes and Verify
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types:
+      - completed
+
+jobs:
+  deploy-and-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Minikube
+      run: |
+        minikube start --driver=docker
+    - name: Deploy to Minikube
+      run: |
+        kubectl apply -f kubernetes/test-deployment.yaml
+        kubectl apply -f kubernetes/test-service.yaml
+    - name: Wait for Deployment
+      run: |
+        timeout=50
+        interval=5
+        start=$(date +%s)
+        while [[ $(date +%s) -lt $((start + timeout)) ]]; do
+          replicas=$(kubectl get deployment test-deployment -o=jsonpath='{.status.availableReplicas}')
+          updated_replicas=$(kubectl get deployment test-deployment -o=jsonpath='{.status.updatedReplicas}')
+          echo "Waiting for deployment rollout to finish: ${updated_replicas:-0} out of ${replicas:-0} updated replicas are available..."
+          if [[ $replicas -gt 0 && $replicas == $updated_replicas ]]; then
+            echo "Deployment successfully rolled out!"
+            break
+          fi
+          sleep $interval
+        done
+        if [[ $replicas -gt 0 && $replicas != $updated_replicas ]]; then
+          echo "Error: Deployment rollout did not finish within the timeout"
+          echo "Getting more information..."
+          kubectl describe deployment test-deployment
+          kubectl describe pods
+          kubectl logs -f deployment/test-deployment
+          kubectl scale deployment test-deployment --replicas=0
+          kubectl scale deployment test-deployment --replicas=1
+          exit 1
+        fi
+    - name: Get Deployment Info
+      run: kubectl get deployment test-deployment
+
+    - name: Get Pod Info
+      run: kubectl get pods
+
+    - name: Get Service Info
+      run: kubectl get service test-service
+
+    - name: Get Events
+      run: kubectl get events
+
+    - name: View Logs
+      run: |
+        POD_NAME=$(kubectl get pods -o jsonpath="{.items[0].metadata.name}")
+        kubectl logs $POD_NAME
+        
+    - name: Clean up Minikube
+      run: minikube stop
