@@ -1,4 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/healthz':
@@ -8,13 +10,22 @@ class RequestHandler(BaseHTTPRequestHandler):
         else:
             self.send_response(404)
             self.end_headers()
-def run(server_class=HTTPServer, handler_class=RequestHandler, port=80):
-    server_address = ('', port)
-    httpd = server_class(server_address, handler_class)
-    print(f'Starting server on port {port}...')
+
+def run_server():
+    server_address = ('', 80)
+    httpd = HTTPServer(server_address, RequestHandler)
+    print(f'Starting server on port 80...')
     httpd.serve_forever()
-    print("completed")
-counter = 0
 
 if __name__ == '__main__':
-    run()
+    # Create a thread for the server
+    server_thread = threading.Thread(target=run_server)
+
+    # Start the server thread
+    server_thread.start()
+
+    # Main thread can continue with other tasks
+    print("Main thread is doing something else...")
+
+    # Wait for the server thread to finish (although it never will in this case)
+    server_thread.join()
