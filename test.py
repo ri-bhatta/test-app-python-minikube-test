@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
+import atexit
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -20,6 +21,9 @@ def run(server_class=HTTPServer, handler_class=RequestHandler, port=80):
 def run_server():
     run()
 
+# Register the cleanup function with atexit
+atexit.register(run_server)
+
 if __name__ == '__main__':
     # Create a thread for the server
     server_thread = threading.Thread(target=run_server)
@@ -30,6 +34,4 @@ if __name__ == '__main__':
     # Main thread can continue with other tasks
     print("Main thread is doing something else...")
 
-    # No need to join() the server thread here
-
-# The main thread will continue to run while the server_thread is serving
+    # The main thread can now safely exit without affecting the server thread
