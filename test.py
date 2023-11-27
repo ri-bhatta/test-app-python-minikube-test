@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
-import atexit
+import signal
+import sys
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -18,15 +19,16 @@ def run(server_class=HTTPServer, handler_class=RequestHandler, port=80):
     print(f'Starting server on port {port}...')
     httpd.serve_forever()
 
-def run_server():
-    run()
-
-# Register the cleanup function with atexit
-atexit.register(run_server)
+def signal_handler(sig, frame):
+    print('Stopping server...')
+    sys.exit(0)
 
 if __name__ == '__main__':
+    # Register the signal handler to gracefully stop the server on Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
+
     # Create a thread for the server
-    server_thread = threading.Thread(target=run_server)
+    server_thread = threading.Thread(target=run)
 
     # Start the server thread
     server_thread.start()
@@ -34,4 +36,5 @@ if __name__ == '__main__':
     # Main thread can continue with other tasks
     print("Main thread is doing something else...")
 
-    # The main thread can now safely exit without affecting the server thread
+    # The main thread will now wait until interrupted
+    server_thread.join()
