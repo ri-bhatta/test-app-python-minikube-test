@@ -2,6 +2,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 import signal
 import sys
+import time
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -17,10 +18,20 @@ def run(server_class=HTTPServer, handler_class=RequestHandler, port=80):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     print(f'Starting server on port {port}...')
-    httpd.serve_forever()
+    
+    # Use a flag to control the while loop
+    running = True
+
+    while running:
+        try:
+            # Handle one request at a time
+            httpd.handle_request()
+        except KeyboardInterrupt:
+            print('Stopping server...')
+            running = False
 
 def signal_handler(sig, frame):
-    print('Stopping server...')
+    # This function will be called on Ctrl+C
     sys.exit(0)
 
 if __name__ == '__main__':
@@ -36,5 +47,8 @@ if __name__ == '__main__':
     # Main thread can continue with other tasks
     print("Main thread is doing something else...")
 
-    # The main thread will now wait until interrupted
+    # Sleep for demonstration purposes
+    time.sleep(10)
+
+    # The main thread will now interrupt the server thread
     server_thread.join()
